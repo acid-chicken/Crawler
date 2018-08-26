@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AngleSharp.Parser.Html;
+using Crawler.Components;
 using Crawler.Controllers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +30,7 @@ namespace Crawler
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<HtmlParser>(new HtmlParser());
+            services.AddSingleton<Parser>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
