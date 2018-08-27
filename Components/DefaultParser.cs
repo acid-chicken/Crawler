@@ -24,7 +24,9 @@ namespace Crawler.Components
 
         public Summaly Parse(string url)
         {
-            var html = FetchHtml(parser, client, url);
+            var (success, html) = FetchHtml(parser, client, ref url);
+            if (!success)
+                return null;
             var tags = ParseAttributes(html);
             var uri = new Uri(url);
 
@@ -62,6 +64,7 @@ namespace Crawler.Components
                 GetTag("twitter:player:height"),
                 out var height) ? height : null as int?;
             return new Summaly(
+                url,
                 sitename,
                 title,
                 description,

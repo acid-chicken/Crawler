@@ -5,6 +5,7 @@ namespace Crawler.Models
     [JsonObject(MemberSerialization.Fields)]
     public class Summaly
     {
+        private string url;
         private string sitename;
         private string title;
         private string description;
@@ -12,30 +13,31 @@ namespace Crawler.Models
         private string thumbnail;
         private Player player;
 
-
         public Summaly()
         {
         }
 
         public Summaly(
+            string url,
             string sitename,
             string title,
             string description,
             string icon,
             string thumbnail,
-            string url,
-            int? width,
-            int? height)
+            string playerUrl,
+            int? playerWidth,
+            int? playerHeight)
         {
+            this.url = url;
             this.sitename = sitename;
             this.title = title;
             this.description = description;
             this.icon = icon;
             this.thumbnail = thumbnail;
             this.player = new Player(
-                url,
-                width,
-                height);
+                playerUrl,
+                playerWidth,
+                playerHeight);
         }
     }
 

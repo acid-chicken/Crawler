@@ -1,7 +1,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using AngleSharp.Dom;
@@ -15,7 +17,7 @@ namespace Crawler.Components
     public class Parser
     {
         private readonly HtmlParser parser;
-        private readonly HttpClient client = HttpClientFactory.Create();
+        private readonly HttpClient client;
         private readonly IEnumerable<IParser> parsers;
         private static readonly IEnumerable<string> separators = new []
         {
@@ -25,8 +27,40 @@ namespace Crawler.Components
             "・"
         };
 
-        internal static IHtmlDocument FetchHtml(HtmlParser parser, HttpClient client, string url) =>
-            parser.Parse(client.GetStreamAsync(url).Result);
+        public Parser(HtmlParser parser, IHttpClientFactory factory)
+        {
+            this.client = factory.CreateClient("crawler");
+            this.parser = parser;
+            this.parsers = new []
+            {
+                new AmazonParser(parser, client),
+                new WikipediaParser(parser, client),
+                new DefaultParser(parser, client) as IParser
+            };
+        }
+
+        internal static (bool success, Stream stream) Request(HtmlParser parser, HttpClient client, ref string url)
+        {
+            var response = client.GetAsync(url).Result;
+            if (response.IsSuccessStatusCode)
+                return (true, response.Content.ReadAsStreamAsync().Result);
+            else
+            {
+                var status = (int)response.StatusCode;
+                if (300 <= status && status <= 399)
+                {
+                    url = response.Headers.Location.AbsoluteUri;
+                    return Request(parser, client, ref url);
+                }
+                return (false, null);
+            }
+        }
+
+        internal static (bool success, IHtmlDocument html) FetchHtml(HtmlParser parser, HttpClient client, ref string url)
+        {
+            var (success, stream) = Request(parser, client, ref url);
+            return (success, success ? parser.Parse(stream) : null);
+        }
 
         internal static IDictionary<string, string> ParseAttributes(IHtmlDocument html) =>
             html.GetElementsByTagName("meta")
@@ -88,8 +122,18 @@ namespace Crawler.Components
             string TryGetUrl(Uri location)
             {
                 using (var response = client.GetAsync(location).Result)
+                {
                     if (response.IsSuccessStatusCode)
                         return response.RequestMessage.RequestUri.AbsoluteUri;
+                    else
+                    {
+                        var status = (int)response.StatusCode;
+                        if (300 <= status && status <= 399)
+                        {
+                            return TryGetUrl(response.Headers.Location);
+                        }
+                    }
+                }
                 var next = new Uri(
                     new Uri(uri.GetLeftPart(UriPartial.Authority)),
                     location);
@@ -112,17 +156,6 @@ namespace Crawler.Components
 
         internal static string OrDefault(string source, string fallback) =>
                 IsNullOrWhiteSpace(source) ? fallback : source;
-
-        public Parser(HtmlParser parser)
-        {
-            this.parser = parser;
-            this.parsers = new []
-            {
-                new AmazonParser(parser, client),
-                new WikipediaParser(parser, client),
-                new DefaultParser(parser, client) as IParser
-            };
-        }
 
         public Summaly Parse(string url) =>
             parsers.FirstOrDefault(x => x.Test(url))?.Parse(url);

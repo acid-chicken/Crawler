@@ -16,9 +16,14 @@ namespace Crawler.Controllers
         }
 
         [HttpGet("url")]
-        public Summaly GetUrl(
-            [FromQuery] string url) =>
-            parser.Parse(url);
+        public IActionResult GetUrl(
+            [FromQuery] string url)
+        {
+            var summaly = parser.Parse(url);
+            return summaly is null ?
+                BadRequest() :
+                Ok(summaly) as IActionResult;
+        }
 
         [HttpGet("[action]")]
         public IActionResult Status() =>

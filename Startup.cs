@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AngleSharp.Parser.Html;
@@ -31,6 +32,12 @@ namespace Crawler
         {
             services.AddSingleton<HtmlParser>(new HtmlParser());
             services.AddSingleton<Parser>();
+
+            services.AddHttpClient("crawler", _ =>
+                new HttpClient(new HttpClientHandler()
+                {
+                    AllowAutoRedirect = false
+                }));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
