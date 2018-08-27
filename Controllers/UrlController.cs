@@ -1,5 +1,4 @@
 using Crawler.Components;
-using Crawler.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Crawler.Controllers
